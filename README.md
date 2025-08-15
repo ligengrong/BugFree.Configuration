@@ -1,0 +1,2 @@
+# BugFree.Configuration
+BugFree.Configuration
