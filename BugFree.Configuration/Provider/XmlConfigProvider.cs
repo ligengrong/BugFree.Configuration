@@ -8,7 +8,7 @@ namespace BugFree.Configuration.Provider
     /// <remarks>
     /// 特性与限制：
     /// - 支持大多数 POCO、以及集合（List/Array）；
-    /// - Dictionary<TKey,TValue> 不被直接支持，可通过自定义桥接类型/属性（例如将字典映射为条目列表）实现；
+    /// - Dictionary不被直接支持，可通过自定义桥接类型/属性（例如将字典映射为条目列表）实现；
     /// - 要求公共无参构造；接口/抽象类型属性无法反序列化；
     /// - 不支持对象图中的循环引用；
     /// - 可用 [XmlIgnore] 排除成员；
@@ -18,7 +18,7 @@ namespace BugFree.Configuration.Provider
     internal class XmlConfigProvider : ConfigProvider
     {
         /// <summary>XML 文件默认使用 UTF-8（无 BOM）。</summary>
-        protected UTF8Encoding UTF8Encoding => new UTF8Encoding(false);
+        protected new UTF8Encoding UTF8Encoding => new UTF8Encoding(false);
         /// <inheritdoc />
         protected override string Serialize<T>(T model)
         {

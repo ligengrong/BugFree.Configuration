@@ -12,7 +12,7 @@
         /// </summary>
         public ConfigProviderType? Provider { get; set; }
         /// <summary>配置名。可以是文件名或分类名</summary>
-        public String Name { get; set; }
+        public String? Name { get; set; }
         /// <summary>配置路径(相对路径)。一般不指定，使用全局默认</summary>
         public String? Path { get; set; }
         /// <summary>是否加密</summary>
@@ -24,6 +24,8 @@
         /// <param name="name">配置名。可以是文件名或分类名</param>
         /// <param name="provider">提供者。内置 ini/xml/json，一般不指定，使用全局默认</param>
         /// <param name="path">配置路径。一般不指定，使用全局默认</param>
+        /// <param name="isencrypted">是否启用加密</param>
+        /// <param name="secret">加密密钥。启用加密时必填</param>
         public ConfigAttribute(String name, ConfigProviderType provider = ConfigProviderType.Json, String? path = null, Boolean isencrypted = false, String? secret = null)
         {
             Provider = provider;
@@ -33,7 +35,9 @@
             if (IsEncrypted && string.IsNullOrWhiteSpace(secret)) { throw new Exception($"启用加密{nameof(secret)}未提供"); }
             Secret = secret;
         }
+        /// <summary>默认构造函数</summary>
         public ConfigAttribute() { }
+        /// <summary>获取配置文件的完整路径</summary>
         public string GetFullPath()
         {
             if (!String.IsNullOrWhiteSpace(_FilePath)) { return _FilePath; }
@@ -52,7 +56,7 @@
     /// <remarks>
     /// 能力与限制简述：
     /// - Ini：仅适合简单“扁平”的键值对，不支持集合、字典、复杂嵌套类型；仅能可靠处理 string、数值、bool、DateTime、枚举等基础类型；
-    /// - Xml（XmlSerializer）：支持大多数 POCO 与集合；不支持 Dictionary<TKey,TValue>（需自定义桥接类型）、接口/抽象类型、缺少公共无参构造的类型、循环引用；
+    /// - Xml（XmlSerializer）：支持大多数 POCO 与集合；不支持 Dictionary（需自定义桥接类型）、接口/抽象类型、缺少公共无参构造的类型、循环引用；
     /// - Json（System.Text.Json）：支持复杂对象/集合/字典；默认不支持接口/抽象类型的多态反序列化、循环引用（需配置/转换器），只序列化可读写公共属性。
     /// </remarks>
     public enum ConfigProviderType
@@ -66,7 +70,7 @@
         /// <summary>
         /// xml 配置（基于 XmlSerializer）。
         /// 适用：大多数 POCO 与集合（List/Array）。
-        /// 限制：Dictionary<TKey,TValue> 不被直接支持；接口/抽象类型属性不能反序列化；要求公共无参构造；不支持循环引用；可用 [XmlIgnore] 排除成员。
+        /// 限制：Dictionary 不被直接支持；接口/抽象类型属性不能反序列化；要求公共无参构造；不支持循环引用；可用 [XmlIgnore] 排除成员。
         /// </summary>
         Xml,
         /// <summary>

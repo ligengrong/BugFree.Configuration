@@ -25,7 +25,7 @@ namespace BugFree.Configuration.Provider
 
         /// <inheritdoc />
         protected override T Deserialize<T>(string text)
-            => JsonSerializer.Deserialize<T>(text, _options);
+            => JsonSerializer.Deserialize<T>(text, _options)!;
 
         /// <inheritdoc />
         protected override string Serialize<T>(T model)

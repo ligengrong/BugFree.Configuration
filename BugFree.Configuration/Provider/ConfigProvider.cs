@@ -26,7 +26,7 @@ namespace BugFree.Configuration.Provider
         /// <summary>是否新建（当目标文件不存在或内容为空时为 true）。</summary>
         public bool IsNew { get; protected set; }
         /// <summary>配置特性（由 <see cref="Config{TConfig}"/> 初始化）。</summary>
-    public ConfigAttribute Attribute { get; set; } = default!;
+        public ConfigAttribute Attribute { get; set; } = default!;
         /// <summary>默认 UTF-8 编码（无 BOM）。</summary>
         protected UTF8Encoding UTF8Encoding => new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
         #endregion
@@ -223,7 +223,7 @@ namespace BugFree.Configuration.Provider
                 var cipher = Encrypt(plain);
                 File.WriteAllText(tmp, cipher, UTF8Encoding);
                 // 安全替换目标文件
-                File.Move(tmp, filePath, overwrite:true);
+                File.Move(tmp, filePath, overwrite: true);
                 IsNew = false;
                 return true;
             }
