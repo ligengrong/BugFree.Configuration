@@ -1,6 +1,5 @@
 ﻿using BugFree.Configuration.Provider;
 
-using System;
 using System.Reflection;
 using System.Runtime.Serialization;
 using System.Text.Json.Serialization;
@@ -37,21 +36,25 @@ namespace BugFree.Configuration
                     {
                         config.OnLoaded();
                         if (config.IsNew) { config.Save(); }
-                        // 启动文件监视器以支持热重载
-                        //prv.StartReloading(() =>
-                        //{
-                        //    lock (typeof(TConfig))
-                        //    {
-                        //        _Current = Provider?.Load<TConfig>();
-                        //        _Current?.OnLoaded();
-                        //    }
-                        //});
+                        // 启动文件监视器以支持热重载（最小侵入：变更时安全重载，保证对外 Current 不为空）
+                        prv.StartReloading(() =>
+                        {
+                            lock (typeof(TConfig))
+                            {
+                                var reloaded = Provider?.Load<TConfig>();
+                                if (reloaded != null)
+                                {
+                                    reloaded.OnLoaded();
+                                    _Current = reloaded;
+                                }
+                            }
+                        });
                     }
 
                     _Current = config;
                 }
 
-                return _Current;
+                return _Current!;
             }
             set { _Current = value; }
         }
@@ -74,7 +77,10 @@ namespace BugFree.Configuration
         protected virtual void OnLoaded() { }
         /// <summary>保存到配置文件中去</summary>
         public virtual void Save() => Provider?.Save((TConfig)this);
-        public void Dispose() { }
+    /// <summary>
+    /// 释放资源（基类默认无托管资源可释放）。
+    /// </summary>
+    public void Dispose() { }
         #endregion
     }
 }

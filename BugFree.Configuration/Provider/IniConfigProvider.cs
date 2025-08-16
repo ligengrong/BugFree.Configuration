@@ -7,7 +7,7 @@ namespace BugFree.Configuration.Provider
     /// <remarks>
     /// 特性与限制：
     /// - 仅支持“扁平”的键值对（string/数值/布尔/DateTime/枚举等基础类型）；
-    /// - 不支持集合（List/Array）、字典（Dictionary<,>）、以及嵌套的复杂对象图；
+    /// - 不支持集合（List/Array）、字典（Dictionary）、以及嵌套的复杂对象图；
     /// - 仅序列化可读属性，反序列化仅对具备公共 setter 的属性赋值；
     /// - 节名采用类型名（TConfig），键名为属性名；
     /// - 文本编码采用 UTF-8（无 BOM）。
