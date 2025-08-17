@@ -77,10 +77,10 @@ namespace BugFree.Configuration
         protected virtual void OnLoaded() { }
         /// <summary>保存到配置文件中去</summary>
         public virtual void Save() => Provider?.Save((TConfig)this);
-    /// <summary>
-    /// 释放资源（基类默认无托管资源可释放）。
-    /// </summary>
-    public void Dispose() { }
+        /// <summary>
+        /// 释放资源（基类默认无托管资源可释放）。
+        /// </summary>
+        public void Dispose() { }
         #endregion
     }
 }

@@ -1,5 +1,4 @@
-﻿using System;
-using YamlDotNet.Serialization;
+﻿using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
 namespace BugFree.Configuration.Provider
