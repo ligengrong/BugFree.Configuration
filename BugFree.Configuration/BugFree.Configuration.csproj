@@ -5,9 +5,14 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-
+  <PropertyGroup>
+	<AssemblyTitle>$(AssemblyName)</AssemblyTitle>
+	<Description>$(AssemblyName)_强类型配置框架：Ini/Xml/Json/Yaml，支持可选加密（AES-GCM）与原子写入</Description>
+	<PackageTags>$(AssemblyName);Configuration;Config;Settings;INI;XML;JSON;YAML;YamlDotNet;Encryption;AES-GCM;AtomicWrite;HotReload;BugFree.Security</PackageTags>
+	<PackageReleaseNotes>新增 Yaml 提供者；支持可选加密（依赖 BugFree.Security）；原子写入保存；统一强类型 API（Config&lt;T&gt;.Current/Save）。</PackageReleaseNotes>
+  </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="BugFree.Security" Version="1.0.250816.1231" />
+    <PackageReference Include="BugFree.Security" Version="1.0.250817.956" />
     <PackageReference Include="YamlDotNet" Version="16.3.0" />
   </ItemGroup>
 </Project>
