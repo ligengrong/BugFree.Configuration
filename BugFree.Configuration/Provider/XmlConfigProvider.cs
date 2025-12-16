@@ -1,6 +1,10 @@
-﻿using System.Text;
+﻿using System.ComponentModel;
+using System.Reflection;
+using System.Text;
 using System.Xml;
 using System.Xml.Serialization;
+
+using YamlDotNet.Serialization;
 
 namespace BugFree.Configuration.Provider
 {
@@ -46,8 +50,14 @@ namespace BugFree.Configuration.Provider
         {
             var serializer = new XmlSerializer(typeof(T));
             using var reader = new StringReader(text);
-            var obj = serializer.Deserialize(reader);
-            return obj is T t ? t : new T();
+            using var xr = XmlReader.Create(reader, new XmlReaderSettings
+            {
+                IgnoreComments = true,
+                IgnoreProcessingInstructions = true,
+                IgnoreWhitespace = false
+            });
+            var cfg = serializer.Deserialize(xr);
+            return cfg is T t ? t : new T();
         }
     }
 }

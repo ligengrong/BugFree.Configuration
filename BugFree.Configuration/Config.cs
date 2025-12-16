@@ -1,9 +1,9 @@
-﻿using BugFree.Configuration.Provider;
-
-using System.Reflection;
+﻿using System.Reflection;
 using System.Runtime.Serialization;
 using System.Text.Json.Serialization;
 using System.Xml.Serialization;
+
+using YamlDotNet.Serialization;
 
 namespace BugFree.Configuration
 {
@@ -70,7 +70,7 @@ namespace BugFree.Configuration
 
         #endregion
         /// <summary>是否新的配置文件</summary>
-        [XmlIgnore, IgnoreDataMember, JsonIgnore]
+        [XmlIgnore, IgnoreDataMember, JsonIgnore, YamlIgnore]
         public Boolean IsNew => Provider?.IsNew ?? false;
         #region 成员方法
         /// <summary>从配置文件中读取完成后触发</summary>

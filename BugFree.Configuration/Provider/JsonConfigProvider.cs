@@ -1,4 +1,6 @@
-﻿using System.Text.Json;
+﻿using System.ComponentModel;
+using System.Reflection;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace BugFree.Configuration.Provider
@@ -20,7 +22,9 @@ namespace BugFree.Configuration.Provider
             WriteIndented = true,
             PropertyNameCaseInsensitive = true,
             DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-            Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+            Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+            ReadCommentHandling = JsonCommentHandling.Skip,
+            AllowTrailingCommas = true
         };
 
         /// <inheritdoc />

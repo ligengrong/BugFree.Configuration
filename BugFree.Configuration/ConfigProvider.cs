@@ -1,8 +1,17 @@
-﻿using BugFree.Security;
+﻿using BugFree.Configuration.Provider;
+using BugFree.Security;
 
+using System.Collections.Concurrent;
+using System.ComponentModel;
+using System.Reflection;
+using System.Runtime.Serialization;
 using System.Text;
+using System.Text.Json.Serialization;
+using System.Xml.Serialization;
 
-namespace BugFree.Configuration.Provider
+using YamlDotNet.Serialization;
+
+namespace BugFree.Configuration
 {
     /// <summary>配置提供者抽象基类（模板方法模式）。</summary>
     /// <remarks>
@@ -15,6 +24,9 @@ namespace BugFree.Configuration.Provider
     /// </remarks>
     public abstract class ConfigProvider : IDisposable
     {
+        
+        static readonly ConcurrentDictionary<(Type type, ConfigProviderType? provider), String> _CommentHeaderCache = new();
+
         #region 属性
         /// <summary>提供者名称（类型名去掉后缀“ConfigProvider”）。</summary>
         public string? Name => GetType().Name.Replace(nameof(ConfigProvider), string.Empty);
@@ -213,8 +225,10 @@ namespace BugFree.Configuration.Provider
             try
             {
                 var dir = Path.GetDirectoryName(filePath);
-                if (!string.IsNullOrEmpty(dir)) { Directory.CreateDirectory(dir); }
+                if (!String.IsNullOrEmpty(dir)) { Directory.CreateDirectory(dir); }
+              
                 var plain = Serialize(model);
+                plain = InjectComments<T>(plain);
                 var cipher = Encrypt(plain);
                 File.WriteAllText(tmp, cipher, UTF8Encoding);
                 // 安全替换目标文件
@@ -232,15 +246,74 @@ namespace BugFree.Configuration.Provider
             StopReloading();
         }
         /// <summary>序列化模型为文本（由具体提供者实现）。</summary>
-        protected abstract string Serialize<T>(T model);
+        protected abstract String Serialize<T>(T model);
         /// <summary>反序列化文本为模型（由具体提供者实现）。</summary>
-        protected abstract T Deserialize<T>(string text) where T : new();
+        protected abstract T Deserialize<T>(String text) where T : new();
+      
         /// <summary>加密明文（当 <see cref="ConfigAttribute.IsEncrypted"/> 为 true 时）。</summary>
-        protected virtual string Encrypt(string plainText)
+        protected virtual String Encrypt(String plainText)
             => Attribute.IsEncrypted ? plainText.EncryptSymmetric(SymmetricAlgorithm.AesGcm, Attribute.Secret!) : plainText;
         /// <summary>解密密文（当 <see cref="ConfigAttribute.IsEncrypted"/> 为 true 时）。</summary>
-        protected virtual string Decrypt(string cipherText)
+        protected virtual String Decrypt(String cipherText)
             => Attribute.IsEncrypted ? cipherText.DecryptSymmetric(Attribute.Secret!) : cipherText;
+
+        protected virtual Boolean IsIgnored(PropertyInfo property)
+        {
+            if (property.GetCustomAttribute<XmlIgnoreAttribute>() != null) { return true; }
+            if (property.GetCustomAttribute<IgnoreDataMemberAttribute>() != null) { return true; }
+            if (property.GetCustomAttribute<JsonIgnoreAttribute>() != null) { return true; }
+            if (property.GetCustomAttribute<YamlIgnoreAttribute>() != null) { return true; }
+            return false;
+        }
+        String InjectComments<T>(String plain)
+        {
+            if (Attribute.IsEncrypted) { return plain; }
+            if (String.IsNullOrEmpty(plain)) { return plain; }
+
+            var header = _CommentHeaderCache.GetOrAdd((typeof(T), Attribute.Provider), (key) => {
+                
+                var properties = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance);
+                if (null == properties ||0 >= properties.Length) { return String.Empty; }
+                var sb = new StringBuilder();
+                foreach (var property in properties)
+                {
+                    if (!property.CanRead) { continue; }
+                    if (IsIgnored(property)) { continue; }
+                    var desc = property.GetCustomAttribute<DescriptionAttribute>();
+                    if (desc == null || String.IsNullOrWhiteSpace(desc.Description)) { continue; }
+                    switch (key.provider)
+                    {
+                        case ConfigProviderType.Ini:
+                            sb.Append("; ").Append(property.Name).Append(" : ").AppendLine(desc.Description);
+                            break;
+                        case ConfigProviderType.Xml:
+                            sb.Append("<!-- ").Append(property.Name).Append(" : ").Append(desc.Description).AppendLine(" -->");
+                            break;
+                        case ConfigProviderType.Json:
+                            sb.Append("// ").Append(property.Name).Append(" : ").AppendLine(desc.Description);
+                            break;
+                        case ConfigProviderType.Yaml:
+                            sb.Append("# ").Append(property.Name).Append(" : ").AppendLine(desc.Description);
+                            break;
+                    }
+                }
+                return sb.ToString();
+            });
+            if (String.IsNullOrEmpty(header)) { return plain; }
+
+            //XML 声明必须是文档第一行（若存在）。注释插入到 XML 声明之后，避免生成非法 XML。
+            if (Attribute.Provider == ConfigProviderType.Xml && plain.StartsWith("<?xml", StringComparison.Ordinal))
+            {
+                var newLineIndex = plain.IndexOf('\n');
+                if (newLineIndex >= 0)
+                {
+                    var insertIndex = newLineIndex + 1;
+                    return plain.Insert(insertIndex, header);
+                }
+            }
+
+            return String.Concat(header, plain);
+        }
         /// <summary>根据配置特性创建具体的配置提供者实例。</summary>
         public static ConfigProvider Create(ConfigAttribute config)
         {

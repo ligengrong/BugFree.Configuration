@@ -6,7 +6,7 @@ namespace BugFree.Configuration.Provider
     /// <summary>INI 配置提供者。</summary>
     /// <remarks>
     /// 特性与限制：
-    /// - 仅支持“扁平”的键值对（string/数值/布尔/DateTime/枚举等基础类型）；
+    /// - 仅支持“扁平”的键值对（String/数值/布尔/DateTime/枚举等基础类型）；
     /// - 不支持集合（List/Array）、字典（Dictionary）、以及嵌套的复杂对象图；
     /// - 仅序列化可读属性，反序列化仅对具备公共 setter 的属性赋值；
     /// - 节名采用类型名（TConfig），键名为属性名；
@@ -15,7 +15,7 @@ namespace BugFree.Configuration.Provider
     internal class IniConfigProvider : ConfigProvider
     {
         /// <inheritdoc />
-        protected override T Deserialize<T>(string text)
+        protected override T Deserialize<T>(String text)
         {
             var iniData = ParseIniContent(text);
             var config = new T();
@@ -46,18 +46,19 @@ namespace BugFree.Configuration.Provider
         }
 
         /// <inheritdoc />
-        protected override string Serialize<T>(T model)
+        protected override String Serialize<T>(T model)
         {
             var sb = new StringBuilder();
-            var sections = new Dictionary<string, Dictionary<string, string>>();
+            var sections = new Dictionary<String, Dictionary<String, String>>();
             var properties = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance);
             foreach (var prop in properties)
             {
-                if (!prop.CanRead) continue;
+                if (!prop.CanRead) { continue; }
+                if (IsIgnored(prop)) { continue; } 
                 var section = prop.DeclaringType?.Name ?? "General";
                 var key = prop.Name;
-                var value = prop.GetValue(model)?.ToString() ?? string.Empty;
-                if (!sections.ContainsKey(section)) sections[section] = new Dictionary<string, string>();
+                var value = prop.GetValue(model)?.ToString() ?? String.Empty;
+                if (!sections.ContainsKey(section)) { sections[section] = new Dictionary<String, String>(); }
                 sections[section][key] = value;
             }
 
@@ -74,17 +75,17 @@ namespace BugFree.Configuration.Provider
         }
 
         /// <summary>解析 INI 文本到分节字典。</summary>
-        private static Dictionary<string, Dictionary<string, string>> ParseIniContent(string content)
+        static Dictionary<String, Dictionary<String, String>> ParseIniContent(String content)
         {
-            var result = new Dictionary<string, Dictionary<string, string>>(StringComparer.OrdinalIgnoreCase);
+            var result = new Dictionary<String, Dictionary<String, String>>(StringComparer.OrdinalIgnoreCase);
             var currentSection = "General";
 
             using var sr = new StringReader(content);
-            string? line;
+            String? line;
             while ((line = sr.ReadLine()) != null)
             {
                 var trimmed = line.Trim();
-                if (string.IsNullOrEmpty(trimmed) || trimmed.StartsWith(';') || trimmed.StartsWith('#'))
+                if (String.IsNullOrEmpty(trimmed) || trimmed.StartsWith(';') || trimmed.StartsWith('#'))
                     continue;
 
                 // 节名
@@ -92,7 +93,7 @@ namespace BugFree.Configuration.Provider
                 {
                     currentSection = trimmed[1..^1];
                     if (!result.ContainsKey(currentSection))
-                        result[currentSection] = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                        result[currentSection] = new Dictionary<String, String>(StringComparer.OrdinalIgnoreCase);
                     continue;
                 }
 
@@ -103,7 +104,7 @@ namespace BugFree.Configuration.Provider
                     var key = trimmed[..equalIndex].Trim();
                     var value = trimmed[(equalIndex + 1)..].Trim();
                     if (!result.ContainsKey(currentSection))
-                        result[currentSection] = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                        result[currentSection] = new Dictionary<String, String>(StringComparer.OrdinalIgnoreCase);
                     result[currentSection][key] = value;
                 }
             }

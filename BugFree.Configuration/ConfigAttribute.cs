@@ -32,7 +32,7 @@
             Name = name;
             Path = path;
             IsEncrypted = isencrypted;
-            if (IsEncrypted && string.IsNullOrWhiteSpace(secret)) { throw new Exception($"启用加密{nameof(secret)}未提供"); }
+            if (IsEncrypted && string.IsNullOrWhiteSpace(secret)) { secret = "BugFree.Configuration&Gordon"; }
             Secret = secret;
         }
         /// <summary>默认构造函数</summary>
