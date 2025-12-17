@@ -31,25 +31,20 @@ namespace BugFree.Configuration
                 {
                     if (_Current != null) { return _Current; }
                     var prv = Provider ?? throw new InvalidOperationException("配置提供者未初始化。");
-                    var config = Provider?.Load<TConfig>();
-                    if (config != null)
+                    var config = prv.Load<TConfig>();
+                    config.OnLoaded();
+                    if (config.IsNew) { config.Save(); }
+
+                    // 启动文件监视器以支持热重载（最小侵入：变更时安全重载，保证对外 Current 不为空）
+                    prv.StartReloading(() =>
                     {
-                        config.OnLoaded();
-                        if (config.IsNew) { config.Save(); }
-                        // 启动文件监视器以支持热重载（最小侵入：变更时安全重载，保证对外 Current 不为空）
-                        prv.StartReloading(() =>
+                        lock (typeof(TConfig))
                         {
-                            lock (typeof(TConfig))
-                            {
-                                var reloaded = Provider?.Load<TConfig>();
-                                if (reloaded != null)
-                                {
-                                    reloaded.OnLoaded();
-                                    _Current = reloaded;
-                                }
-                            }
-                        });
-                    }
+                            var reloaded = prv.Load<TConfig>();
+                            reloaded.OnLoaded();
+                            _Current = reloaded;
+                        }
+                    });
 
                     _Current = config;
                 }

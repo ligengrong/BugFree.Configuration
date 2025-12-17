@@ -188,27 +188,34 @@ namespace BugFree.Configuration
         {
             var filePath = path ?? Attribute.GetFullPath();
             if (!File.Exists(filePath)) { IsNew = true; return new T(); }
-            try
+            const Int32 maxRetries = 5;
+            for (var i = 0; i <= maxRetries; i++)
             {
-                // 安全读取
-                using var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
-                using var reader = new StreamReader(fileStream, UTF8Encoding);
-                var context = reader.ReadToEnd();
-                if (string.IsNullOrWhiteSpace(context)) { IsNew = true; return new T(); }
-                var plain = Decrypt(context);
-                var model = Deserialize<T>(plain) ?? new T();
-                return model;
-            }
-            catch (IOException ex)
-            {
-                if (ex.HResult == -2147024864)// 0x80070020 ERROR_SHARING_VIOLATION
+                try
                 {
-                    // 文件被锁定时等待重试
-                    Thread.Sleep(100);
-                    return Load<T>(path);  // 简单重试，实际应加入重试次数限制
+                    // 安全读取
+                    using var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+                    using var reader = new StreamReader(fileStream, UTF8Encoding);
+                    var context = reader.ReadToEnd();
+                    if (string.IsNullOrWhiteSpace(context)) { IsNew = true; return new T(); }
+                    var plain = Decrypt(context);
+                    var model = Deserialize<T>(plain) ?? new T();
+                    IsNew = false;
+                    return model;
                 }
-                throw;
+                catch (IOException ex)
+                {
+                    if (ex.HResult == -2147024864 && i < maxRetries)// 0x80070020 ERROR_SHARING_VIOLATION
+                    {
+                        // 文件被锁定时等待重试
+                        Thread.Sleep(100);
+                        continue;
+                    }
+                    throw;
+                }
             }
+
+            return new T();
         }
 
         /// <summary> 保存模型实例。</summary>
@@ -220,12 +227,13 @@ namespace BugFree.Configuration
             var filePath = path ?? Attribute.GetFullPath();
             if (string.IsNullOrEmpty(filePath) || model == null) return false;
 
-            // 跨进程安全写入：先写入临时文件，再原子替换目标文件，尽量避免读到半文件/被其他进程占用
-            var tmp = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}.tmp");
+            // 跨进程安全写入：先写入临时文件（同目录同卷），再原子替换目标文件，尽量避免读到半文件/被其他进程占用
+            var tmp = String.Empty;
             try
             {
                 var dir = Path.GetDirectoryName(filePath);
                 if (!String.IsNullOrEmpty(dir)) { Directory.CreateDirectory(dir); }
+                tmp = Path.Combine(dir ?? Path.GetTempPath(), $"{Path.GetFileName(filePath)}.{Guid.NewGuid():N}.tmp");
               
                 var plain = Serialize(model);
                 plain = InjectComments<T>(plain);
@@ -237,7 +245,7 @@ namespace BugFree.Configuration
                 return true;
             }
             catch { throw; }
-            finally { if (File.Exists(tmp)) File.Delete(tmp); }
+            finally { if (!String.IsNullOrEmpty(tmp) && File.Exists(tmp)) File.Delete(tmp); }
         }
 
         /// <summary>释放资源。</summary>
@@ -297,6 +305,7 @@ namespace BugFree.Configuration
                             break;
                     }
                 }
+                if (sb.Length > 0) { sb.AppendLine(); }
                 return sb.ToString();
             });
             if (String.IsNullOrEmpty(header)) { return plain; }
@@ -304,10 +313,17 @@ namespace BugFree.Configuration
             //XML 声明必须是文档第一行（若存在）。注释插入到 XML 声明之后，避免生成非法 XML。
             if (Attribute.Provider == ConfigProviderType.Xml && plain.StartsWith("<?xml", StringComparison.Ordinal))
             {
-                var newLineIndex = plain.IndexOf('\n');
-                if (newLineIndex >= 0)
+                var endDeclIndex = plain.IndexOf("?>", StringComparison.Ordinal);
+                if (endDeclIndex >= 0)
                 {
-                    var insertIndex = newLineIndex + 1;
+                    var insertIndex = endDeclIndex + 2;
+                    if (insertIndex < plain.Length && plain[insertIndex] == '\r') { insertIndex++; }
+                    if (insertIndex < plain.Length && plain[insertIndex] == '\n') { insertIndex++; }
+
+                    if (insertIndex < plain.Length && plain[insertIndex] != '\r' && plain[insertIndex] != '\n')
+                    {
+                        return plain.Insert(insertIndex, Environment.NewLine + header);
+                    }
                     return plain.Insert(insertIndex, header);
                 }
             }
