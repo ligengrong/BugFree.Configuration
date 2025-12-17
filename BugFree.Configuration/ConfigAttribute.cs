@@ -1,4 +1,6 @@
-﻿namespace BugFree.Configuration
+﻿using BugFree.Configuration.HotReloader;
+
+namespace BugFree.Configuration
 {
     /// <summary>配置特性</summary>
     /// <remarks>
@@ -7,10 +9,10 @@
     /// </remarks>
     public class ConfigAttribute : Attribute
     {
-        /// <summary>
-        /// 提供者。内置 ini/xml/json（见 <see cref="ConfigProviderType"/>）。
-        /// </summary>
+        /// <summary>提供者。内置 ini/xml/json（见 <see cref="ConfigProviderType"/>）。</summary>
         public ConfigProviderType? Provider { get; set; }
+        /// <summary>热重载器类型</summary>
+        public HotReloaderType? Reloader { get; set; } = HotReloaderType.FileWatcher;
         /// <summary>配置名。可以是文件名或分类名</summary>
         public String? Name { get; set; }
         /// <summary>配置路径(相对路径)。一般不指定，使用全局默认</summary>
@@ -19,6 +21,8 @@
         public Boolean IsEncrypted { get; set; }
         /// <summary>加密密钥</summary>
         public String? Secret { get; set; }
+
+        /// <summary>缓存的完整文件路径（首次计算后复用）。</summary>
         String? _FilePath;
         /// <summary>指定配置名</summary>
         /// <param name="name">配置名。可以是文件名或分类名</param>
@@ -37,13 +41,23 @@
         }
         /// <summary>默认构造函数</summary>
         public ConfigAttribute() { }
+
         /// <summary>获取配置文件的完整路径</summary>
-        public string GetFullPath()
+        /// <remarks>
+        /// 规则：
+        /// - <see cref="Name"/> 不带扩展名时，自动追加提供者后缀（如 .json/.xml/.ini/.yaml）；
+        /// - <see cref="Name"/> 已带扩展名时（如 garnet.conf），直接使用该文件名，不再追加后缀。
+        /// </remarks>
+        public String GetFullPath()
         {
             if (!String.IsNullOrWhiteSpace(_FilePath)) { return _FilePath; }
             // 解析文件路径
             var basePath = Path ?? "./config";
-            var fileName = $"{Name}.{Provider}";
+            var suffix = $"{Provider}".ToLowerInvariant();
+            var name = Name;
+            if (String.IsNullOrWhiteSpace(name)) { name = "Config"; }
+
+            var fileName = System.IO.Path.HasExtension(name) ? name : $"{name}.{suffix}";
             _FilePath = System.IO.Path.GetFullPath(System.IO.Path.Combine(basePath, fileName));
             // 确保目录存在
             var directory = System.IO.Path.GetDirectoryName(_FilePath);

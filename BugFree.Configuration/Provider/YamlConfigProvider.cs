@@ -14,10 +14,15 @@ namespace BugFree.Configuration.Provider
     /// </remarks>
     internal class YamlConfigProvider : ConfigProvider
     {
+        /// <summary>单例实例。</summary>
+        public static readonly YamlConfigProvider Instance = new();
+
+        /// <summary>私有构造函数（使用 <see cref="Instance"/> 单例）。</summary>
+        YamlConfigProvider() { }
         /// <inheritdoc />
-        protected override T Deserialize<T>(string text)
+        protected override T Deserialize<T>(String text)
         {
-            if (string.IsNullOrWhiteSpace(text)) return new T();
+            if (String.IsNullOrWhiteSpace(text)) return new T();
 
             var deserializer = new DeserializerBuilder()
                 .WithNamingConvention(NullNamingConvention.Instance) // 保持属性名
@@ -29,7 +34,7 @@ namespace BugFree.Configuration.Provider
         }
 
         /// <inheritdoc />
-        protected override string Serialize<T>(T model)
+        protected override String Serialize<T>(T model)
         {
             var serializer = new SerializerBuilder()
                 .WithNamingConvention(NullNamingConvention.Instance) // 保持属性名

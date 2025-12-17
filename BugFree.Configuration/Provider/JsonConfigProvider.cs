@@ -1,6 +1,4 @@
-﻿using System.ComponentModel;
-using System.Reflection;
-using System.Text.Json;
+﻿using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace BugFree.Configuration.Provider
@@ -26,13 +24,18 @@ namespace BugFree.Configuration.Provider
             ReadCommentHandling = JsonCommentHandling.Skip,
             AllowTrailingCommas = true
         };
+        /// <summary>单例实例。</summary>
+        public static readonly JsonConfigProvider Instance = new();
+
+        /// <summary>私有构造函数（使用 <see cref="Instance"/> 单例）。</summary>
+        JsonConfigProvider() { }
 
         /// <inheritdoc />
-        protected override T Deserialize<T>(string text)
+        protected override T Deserialize<T>(String text)
             => JsonSerializer.Deserialize<T>(text, _options)!;
 
         /// <inheritdoc />
-        protected override string Serialize<T>(T model)
+        protected override String Serialize<T>(T model)
             => JsonSerializer.Serialize(model, _options);
     }
 }

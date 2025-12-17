@@ -1,10 +1,6 @@
-﻿using System.ComponentModel;
-using System.Reflection;
-using System.Text;
+﻿using System.Text;
 using System.Xml;
 using System.Xml.Serialization;
-
-using YamlDotNet.Serialization;
 
 namespace BugFree.Configuration.Provider
 {
@@ -23,8 +19,13 @@ namespace BugFree.Configuration.Provider
     {
         /// <summary>XML 文件默认使用 UTF-8（无 BOM）。</summary>
         protected new UTF8Encoding UTF8Encoding => new UTF8Encoding(false);
+        /// <summary>单例实例。</summary>
+        public static readonly XmlConfigProvider Instance = new();
+
+        /// <summary>私有构造函数（使用 <see cref="Instance"/> 单例）。</summary>
+        XmlConfigProvider() { }
         /// <inheritdoc />
-        protected override string Serialize<T>(T model)
+        protected override String Serialize<T>(T model)
         {
             var serializer = new XmlSerializer(typeof(T));
             var settings = new XmlWriterSettings
@@ -46,7 +47,7 @@ namespace BugFree.Configuration.Provider
         }
 
         /// <inheritdoc />
-        protected override T Deserialize<T>(string text)
+        protected override T Deserialize<T>(String text)
         {
             var serializer = new XmlSerializer(typeof(T));
             using var reader = new StringReader(text);

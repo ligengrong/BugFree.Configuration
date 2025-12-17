@@ -14,6 +14,11 @@ namespace BugFree.Configuration.Provider
     /// </remarks>
     internal class IniConfigProvider : ConfigProvider
     {
+        /// <summary>单例实例。</summary>
+        public static readonly IniConfigProvider Instance = new();
+
+        /// <summary>私有构造函数（使用 <see cref="Instance"/> 单例）。</summary>
+        IniConfigProvider() { }
         /// <inheritdoc />
         protected override T Deserialize<T>(String text)
         {
@@ -54,7 +59,7 @@ namespace BugFree.Configuration.Provider
             foreach (var prop in properties)
             {
                 if (!prop.CanRead) { continue; }
-                if (IsIgnored(prop)) { continue; } 
+                if (IsIgnored(prop)) { continue; }
                 var section = prop.DeclaringType?.Name ?? "General";
                 var key = prop.Name;
                 var value = prop.GetValue(model)?.ToString() ?? String.Empty;
@@ -75,6 +80,8 @@ namespace BugFree.Configuration.Provider
         }
 
         /// <summary>解析 INI 文本到分节字典。</summary>
+        /// <param name="content">INI 文本。</param>
+        /// <returns>按节名与键名组织的字典。</returns>
         static Dictionary<String, Dictionary<String, String>> ParseIniContent(String content)
         {
             var result = new Dictionary<String, Dictionary<String, String>>(StringComparer.OrdinalIgnoreCase);
