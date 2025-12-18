@@ -10,9 +10,9 @@ namespace BugFree.Configuration
     public class ConfigAttribute : Attribute
     {
         /// <summary>提供者。内置 ini/xml/json（见 <see cref="ConfigProviderType"/>）。</summary>
-        public ConfigProviderType? Provider { get; set; }
+        public ConfigProviderType Provider { get; set; }
         /// <summary>热重载器类型</summary>
-        public HotReloaderType? Reloader { get; set; } = HotReloaderType.FileWatcher;
+        public HotReloaderType Reloader { get; set; } = HotReloaderType.FileWatcher;
         /// <summary>配置名。可以是文件名或分类名</summary>
         public String? Name { get; set; }
         /// <summary>配置路径(相对路径)。一般不指定，使用全局默认</summary>
@@ -30,9 +30,10 @@ namespace BugFree.Configuration
         /// <param name="path">配置路径。一般不指定，使用全局默认</param>
         /// <param name="isencrypted">是否启用加密</param>
         /// <param name="secret">加密密钥。启用加密时必填</param>
-        public ConfigAttribute(String name, ConfigProviderType provider = ConfigProviderType.Json, String? path = null, Boolean isencrypted = false, String? secret = null)
+        public ConfigAttribute(String name, ConfigProviderType provider = ConfigProviderType.Json, String? path = null, Boolean isencrypted = false, String? secret = null, HotReloaderType reloader = HotReloaderType.FileWatcher)
         {
             Provider = provider;
+            Reloader = reloader;
             Name = name;
             Path = path;
             IsEncrypted = isencrypted;
